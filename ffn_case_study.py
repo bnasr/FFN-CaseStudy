@@ -38,9 +38,12 @@ Each of the four parts above carry equal weightage in evaluation. We don’t thi
 7.	is_hardship - whether the word hardship appeared in the search query
 8.	category_debt_type - type of debt solution that appeared in the search query
 9.	[TARGET] is_activated – whether the user talked to FFN call center or not
-
-# Loading required modules
 """
+
+import datetime
+start_time = datetime.datetime.now()
+
+"""# Loading required modules"""
 
 import numpy as np
 import pandas as pd
@@ -170,7 +173,7 @@ To prepare the input data for the TensorFlow data pipeline, we need to put to in
 ---
 """
 
-def create_dataset(data, batch_size=1024):
+def create_dataset(data, batch_size=512):
   df = data.copy()
   labels = df.pop('is_activated')
   
@@ -223,7 +226,7 @@ for col_name in embeding_columns:
 # crossed columns
 campaign_state = feature_column.categorical_column_with_vocabulary_list('campaign_state', clicks.campaign_state.unique())
 location_in_query = feature_column.categorical_column_with_vocabulary_list('location_in_query', clicks.location_in_query.unique())
-state_location = feature_column.crossed_column([campaign_state, location_in_query], hash_bucket_size=500)
+state_location = feature_column.crossed_column([campaign_state, location_in_query], hash_bucket_size=100)
 feature_columns.append(feature_column.indicator_column(state_location))
 
 """# Model
@@ -271,15 +274,19 @@ model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate= 0.001),
               metrics = metrics)
 
 class_weight = {1: 1,
-                0: 0.75}
+                0: 0.82}
 
 history = model.fit(train_data,
                     validation_data = val_data, 
                     class_weight = class_weight,
-                    epochs=200)
+                    epochs=500)
 
-print('training evaluation:', model.evaluate(train_data))
-print('test evaluation:', model.evaluate(test_data))
+print('training evaluation:')
+eval_train = model.evaluate(train_data)
+print('\nvalidation evaluation:') 
+eval_val = model.evaluate(val_data)
+print('\ntest evaluation:')
+eval_test = model.evaluate(test_data)
 
 model.save('drive/My Drive/ffn/model.tfm')
 
@@ -290,7 +297,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 # setting fonts for axes
-matplotlib.rcParams['figure.figsize'] = [24, 8] # width and height of figures
+matplotlib.rcParams['figure.figsize'] = [24, 12] # width and height of figures
 
 font = {'family' : 'DejaVu Sans', # font
         'weight' : 'bold',
@@ -299,12 +306,15 @@ matplotlib.rc('font', **font)
 
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
-for n, metric in enumerate(metrics_names[0:3]):
+for n, metric in enumerate(metrics_names[0:5]):
     name = metric.replace("_"," ").upper()
-    plt.subplot(1,3,n+1)
+    plt.subplot(2,3,n+1)
     plt.plot(history.epoch,  history.history[metric], color=colors[0], label='train')
     plt.plot(history.epoch, history.history['val_'+metric], color=colors[1], linestyle="-", label='valid')
     plt.xlabel('epoch')
     plt.ylabel(name)
-    plt.ylim([0.4,0.85])
-    if metric == 'recall': plt.legend()
+    plt.ylim([0,1])
+    if metric == 'auc': plt.legend()
+
+end_time = datetime.datetime.now()
+print('total run time:', end_time - start_time)
