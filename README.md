@@ -17,7 +17,6 @@ A user is looking for loans on Google and enters a search query. Depending on ho
 
 4.	Discuss how will you analyze the business performance of the algorithm once in production using metrics such as marketing ROI etc.?
 
-Each of the four parts above carry equal weightage in evaluation. We don’t think you need to spend more than 3 hours on the overall exercise (please feel free to take more time if you want). If you have questions please contact: azajic@freedomfinancialnetwork.com
 
 ## Data Dictionary:
 
