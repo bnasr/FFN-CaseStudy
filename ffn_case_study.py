@@ -71,8 +71,12 @@ print(clicks.info(), '\n')
 #printing first few rows
 clicks.head()
 
+"""Replace boolean values with integer 0 or 1."""
+
+# replacing boolean values with integer 0 or 1
 clicks['is_activated'] = np.where(clicks['is_activated']==True, 0, 1)
 
+# check counts per class
 clicks.is_activated.value_counts()
 
 """As shown above there are missing values in different columns. We can take a closer look at the statistics  using the below command."""
@@ -111,7 +115,7 @@ clicks['category_debt_type'].fillna(clicks['category_debt_type'].mode()[0], inpl
 print(clicks.isnull().sum())
 
 """# Balance the data
-As the training data is imbalanced, we need to adjust number of positive vs negaive labels.
+As the training data is imbalanced, we need to adjust the number of positive vs negaive labels.
 """
 
 from sklearn.utils import resample
@@ -186,9 +190,11 @@ test_data = create_dataset(test)
 To create the list of what feature to put in the model, we use the `feature_column` module from `TensorFlow`.
 """
 
+# check each variable's number of unique values
 for i in clicks.columns:
   print(i, len(clicks[i].unique()), clicks[i].dtype)
 
+# check for errors
 clicks.platform.unique()
 
 from tensorflow import feature_column
@@ -220,7 +226,13 @@ location_in_query = feature_column.categorical_column_with_vocabulary_list('loca
 state_location = feature_column.crossed_column([campaign_state, location_in_query], hash_bucket_size=500)
 feature_columns.append(feature_column.indicator_column(state_location))
 
-"""# Model"""
+"""# Model
+I used a neural network model with four main layers:
+- An input layer of all features
+- A dense layer of 1024 neurons with 50% dropout and ‘ReLU’ activation
+- A dense layer of 128 neurons with 50% dropout and ‘ReLU’ activation
+- A final single neuron layer of outputs with ‘sigmoid’ activation
+"""
 
 model = tf.keras.Sequential()
 
@@ -234,7 +246,9 @@ model.add(layers.Dropout(0.5))
 
 model.add(layers.Dense(1, activation='sigmoid'))
 
-# I used four main metrics for our binary classification.
+"""I used four main metrics for our binary classification."""
+
+# four main metrics for our binary classification.
 metrics = [
       tf.keras.metrics.BinaryAccuracy(name='accuracy'),
       tf.keras.metrics.AUC(name='auc'),
@@ -244,7 +258,14 @@ metrics = [
 
 metrics_names =  ['loss','accuracy', 'auc', 'precision', 'recall']
 
-#model compile
+"""- I used the binary cross entropy function as my loss function that should be optimized.
+
+- Because this is a binary classification, the Adam (Adaptive Moment Estimation) optimizer function should perform better than the generic SGD (Stochastic Gradient Descent).
+
+- After tuning the 0.001 learning rate showed a reasonable performance
+"""
+
+#model being compiled
 model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate= 0.001),
               loss = tf.keras.losses.BinaryCrossentropy(),
               metrics = metrics)
@@ -255,7 +276,7 @@ class_weight = {1: 1,
 history = model.fit(train_data,
                     validation_data = val_data, 
                     class_weight = class_weight,
-                    epochs=20)
+                    epochs=200)
 
 print('training evaluation:', model.evaluate(train_data))
 print('test evaluation:', model.evaluate(test_data))
